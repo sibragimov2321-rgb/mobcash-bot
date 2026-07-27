@@ -6,7 +6,14 @@ from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+)
 from dotenv import load_dotenv
 
 
@@ -44,7 +51,20 @@ def menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="💬 Поддержка", callback_data="support"),
          InlineKeyboardButton(text="ℹ️ Правила", callback_data="rules")],
     ])
-
+def main_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="💳 Пополнить"),
+                KeyboardButton(text="💸 Вывести"),
+            ],
+            [
+                KeyboardButton(text="👨‍💻 Поддержка"),
+            ],
+        ],
+        resize_keyboard=True,
+        input_field_placeholder="Выберите действие",
+    )
 
 def back() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="← В меню", callback_data="home")]])
@@ -139,12 +159,50 @@ async def support(callback: CallbackQuery):
 
 @dp.message(F.text)
 async def support_message(message: Message):
+    @dp.message(F.text == "💳 Пополнить")
+async def deposit_start(message: Message):
+    await message.answer(
+        "💳 <b>Пополнение счёта</b>\n\n"
+        "Введите номер счёта, с которого вносите средства "
+        "(DEPOSIT ID).\n\n"
+        "Пример: <code>1749177745</code>",
+        parse_mode="HTML",
+    )
+
+
+@dp.message(F.text == "💸 Вывести")
+async def withdraw_start(message: Message):
+    await message.answer(
+        "💸 <b>Вывод средств</b>\n\n"
+        "Введите номер вашего счёта для вывода.",
+        parse_mode="HTML",
+    )
+
+
+@dp.message(F.text == "👨‍💻 Поддержка")
+async def support_start(message: Message):
+    await message.answer(
+        "👨‍💻 <b>Поддержка</b>\n\n"
+        "Напишите одним сообщением свой вопрос.\n"
+        "После этого он будет передан оператору.",
+        parse_mode="HTML",
+    )
     ensure_user(message.from_user)
     db.execute("INSERT INTO support_requests(user_id, text) VALUES (?, ?)", (message.from_user.id, message.text))
     db.commit()
     for admin_id in ADMIN_IDS:
         await message.bot.send_message(admin_id, f"Новая заявка #{db.execute('SELECT last_insert_rowid()').fetchone()[0]}\nОт: {message.from_user.full_name} (@{message.from_user.username or 'нет'})\n\n{message.text}")
-    await message.answer("✅ Сообщение передано в поддержку. Ответ придёт в этот чат.", reply_markup=menu())
+    await message.answer(
+    "│ Привет, BANKTRANSFER! ❞\n\n"
+    "<b>Пополнение и выводы 🇰🇬</b>\n\n"
+    "│ 💸 0% комиссии ❞\n\n"
+    "│ 🛡 Защищённые транзакции ❞\n\n"
+    "│ 🚀 Обработка: 10 сек – 1 мин ❞\n\n"
+    "│ 📩 Служба поддержки: @sibragimov00 ❞\n\n"
+    "<b>Работаем 24/7! 💯</b>",
+    reply_markup=main_keyboard(),
+    parse_mode="HTML",
+)
 
 
 async def main():
