@@ -193,15 +193,17 @@ async def support_start(message: Message):
     for admin_id in ADMIN_IDS:
         await message.bot.send_message(admin_id, f"Новая заявка #{db.execute('SELECT last_insert_rowid()').fetchone()[0]}\nОт: {message.from_user.full_name} (@{message.from_user.username or 'нет'})\n\n{message.text}")
     await message.answer(
-    "│ Привет, BANKTRANSFER! ❞\n\n"
+    "│ Привет, <b>BANKTRANSFER</b> ! ❞\n\n"
     "<b>Пополнение и выводы 🇰🇬</b>\n\n"
     "│ 💸 0% комиссии ❞\n\n"
-    "│ 🛡 Защищённые транзакции ❞\n\n"
-    "│ 🚀 Обработка: 10 сек – 1 мин ❞\n\n"
-    "│ 📩 Служба поддержки: @sibragimov00 ❞\n\n"
+    "│ 🛡 Защищенные транзакции ❞\n\n"
+    "│ 🚀 Обработка: 10 сек - 1 мин ❞\n\n"
+    "│ 📩 Служба поддержки: "
+    "<a href='https://t.me/ВАШ_USERNAME'>@ВАШ_USERNAME</a> ❞\n\n"
     "<b>Работаем 24/7! 💯</b>",
-    reply_markup=main_keyboard(),
     parse_mode="HTML",
+    reply_markup=main_keyboard(),
+    disable_web_page_preview=True,
 )
 
 
