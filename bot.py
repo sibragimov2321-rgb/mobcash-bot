@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -385,7 +386,7 @@ async def fallback(message: Message) -> None:
 
 async def main() -> None:
     init_database()
-    bot = Bot(settings.token, parse_mode=ParseMode.HTML)
+    bot = Bot(settings.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dispatcher = Dispatcher()
     dispatcher.include_router(router)
     await dispatcher.start_polling(bot)
