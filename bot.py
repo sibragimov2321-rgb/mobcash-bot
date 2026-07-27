@@ -120,15 +120,15 @@ SUPPORTED_LANGUAGES = {"ru", "en", "ky"}
 
 
 MAIN_LABELS = {
-    "deposit": {"ru": "Пополнить", "en": "Deposit", "ky": "Толуктоо"},
-    "withdrawal": {"ru": "Вывести", "en": "Withdraw", "ky": "Чыгаруу"},
+    "deposit": {"ru": "💳 Пополнить", "en": "💳 Deposit", "ky": "💳 Толуктоо"},
+    "withdrawal": {"ru": "💸 Вывести", "en": "💸 Withdraw", "ky": "💸 Чыгаруу"},
     "profile": {"ru": "Профиль", "en": "Profile", "ky": "Профиль"},
     "terms": {
         "ru": "Соглашение и правила",
         "en": "Terms and rules",
         "ky": "Келишим жана эрежелер",
     },
-    "support": {"ru": "Тех поддержка", "en": "Support", "ky": "Колдоо"},
+    "support": {"ru": "👨‍💼 Поддержка", "en": "👨‍💼 Support", "ky": "👨‍💼 Колдоо"},
     "language": {"ru": "🌐 Язык", "en": "🌐 Language", "ky": "🌐 Тил"},
 }
 
@@ -978,14 +978,13 @@ async def show_main_menu(message: Message, user: User) -> None:
     )
     if language == "en":
         greeting = (
-            f"Hello, {html.escape(user.first_name)} | "
-            f"<b>{html.escape(settings.service_name)}</b>! 🟢\n\n"
-            "🟢 Deposit | Withdrawal\n\n"
-            "🛬 Deposit — 0%\n"
-            "🛫 Withdrawal — 0%\n"
-            "🌐 Available 24/7\n\n"
-            f"👨‍💼 Operator: {html.escape(operator)}\n\n"
-            "🛡️ Financial control is handled by a dedicated security team."
+            f"<b>💳 {html.escape(settings.service_name)}</b>\n\n"
+            f"Hello, {html.escape(user.first_name)}!\n\n"
+            "<b>Deposits and withdrawals 🇰🇬</b>\n\n"
+            "✂️ 0% commission\n🛡️ Protected transactions\n"
+            "🚀 Processing: 10 sec – 1 min\n\n"
+            f"👨‍💼 Support: {html.escape(operator)}\n\n"
+            "<b>Working 24/7 💯</b>"
         )
     elif language == "ky":
         greeting = (
@@ -1000,14 +999,13 @@ async def show_main_menu(message: Message, user: User) -> None:
         )
     else:
         greeting = (
-            f"Привет, {html.escape(user.first_name)} | "
-            f"<b>{html.escape(settings.service_name)}</b>! 🟢\n\n"
-            "🟢 Пополнение | Вывод\n\n"
-            "🛬 Пополнение — 0%\n"
-            "🛫 Вывод — 0%\n"
-            "🌐 Работаем 24/7\n\n"
-            f"👨‍💼 Оператор: {html.escape(operator)}\n\n"
-            "🛡️ Финансовый контроль обеспечен личным отделом безопасности."
+            f"<b>💳 {html.escape(settings.service_name)}</b>\n\n"
+            f"Привет, {html.escape(user.first_name)}! 💬\n\n"
+            "<b>Пополнение и выводы 🇰🇬</b>\n\n"
+            "✂️ 0% комиссии\n🛡️ Защищённые транзакции\n"
+            "🚀 Обработка: 10 сек – 1 мин\n\n"
+            f"👨‍💼 Служба поддержки: {html.escape(operator)}\n\n"
+            "<b>Работаем 24/7! 💯</b>"
         )
     await message.answer(greeting, reply_markup=main_keyboard(language))
 
