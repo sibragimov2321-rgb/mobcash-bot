@@ -2,7 +2,12 @@
 .venv/
 .railway/
 __pycache__/
-*.log
 *.py[cod]
+*.log
+*.db
+*.sqlite
+*.sqlite3
 data/
 video_analysis/
+setup_bot.cmd
+start_bot.cmd
