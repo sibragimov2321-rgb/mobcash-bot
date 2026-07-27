@@ -63,7 +63,7 @@ def main_keyboard() -> ReplyKeyboardMarkup:
             ],
         ],
         resize_keyboard=True,
-        input_field_placeholder="Выберите действие",
+        is_persistent=True,
     )
 
 def back() -> InlineKeyboardMarkup:
