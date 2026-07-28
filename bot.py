@@ -106,9 +106,9 @@ class Deposit(StatesGroup):
     receipt = State()
 
 
-MAIN_DEPOSIT = "💳 Пополнить"
-MAIN_WITHDRAW = "💸 Вывести"
-MAIN_SUPPORT = "👨‍💼 Поддержка"
+MAIN_DEPOSIT = "⬇️ Пополнить"
+MAIN_WITHDRAW = "⬆️ Вывести"
+MAIN_REFERRAL = "🤝 Пригласи друга"
 CANCEL = "✖️ Отмена"
 
 
@@ -116,7 +116,7 @@ def main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=MAIN_DEPOSIT), KeyboardButton(text=MAIN_WITHDRAW)],
-            [KeyboardButton(text=MAIN_SUPPORT)],
+            [KeyboardButton(text=MAIN_REFERRAL)],
         ],
         resize_keyboard=True,
     )
@@ -166,6 +166,17 @@ def subscription_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def support_keyboard() -> InlineKeyboardMarkup:
+    username = settings.support.lstrip("@").strip()
+    if not username:
+        return InlineKeyboardMarkup(inline_keyboard=[])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✍️ НАПИСАТЬ В ПОДДЕРЖКУ", url=f"https://t.me/{username}")]
+        ]
+    )
+
+
 def payment_link_keyboard(url: str) -> InlineKeyboardMarkup:
     if url.startswith("https://") or url.startswith("http://"):
         return InlineKeyboardMarkup(
@@ -206,15 +217,21 @@ async def allow(message: Message, bot: Bot) -> bool:
 async def show_home(message: Message) -> None:
     name = html.escape(message.from_user.first_name if message.from_user else "друг")
     support = html.escape(settings.support)
+    support_link = f"https://t.me/{settings.support.lstrip('@')}"
     await message.answer(
-        f"<b>MOBCASH</b>\n\n"
-        f"Привет, {name}! 💬\n\n"
+        f"<blockquote>Привет, {name}! 💬</blockquote>\n\n"
         "<b>Пополнение и выводы 🇰🇬</b>\n\n"
-        "✂️ 0% комиссии\n"
-        "🛡️ Защищённые транзакции\n"
-        "🚀 Обработка: 10 сек – 1 мин\n\n"
-        f"👨‍💼 Служба поддержки: {support}\n\n"
-        "<b>Работаем 24/7! 💯</b>",
+        "<blockquote>✂️ 0% комиссии 💬</blockquote>\n"
+        "<blockquote>🛡️ Защищенные транзакции 💬</blockquote>\n"
+        "<blockquote>🛫 Обработка: 10 сек - 1 мин 💬</blockquote>\n"
+        f"<blockquote>📋 Служба поддержки: <a href=\"{support_link}\">{support}</a> 💬</blockquote>\n\n"
+        "<b>Работаем 24/7! 💯</b>\n\n"
+        "Выберите действие 👇",
+        disable_web_page_preview=True,
+        reply_markup=support_keyboard(),
+    )
+    await message.answer(
+        "Выберите действие кнопками ниже.",
         reply_markup=main_keyboard(),
     )
 
@@ -222,6 +239,16 @@ async def show_home(message: Message) -> None:
 @router.message(CommandStart())
 async def start(message: Message, bot: Bot, state: FSMContext) -> None:
     await state.clear()
+    if message.from_user and not await subscribed(bot, message.from_user.id):
+        await message.answer(
+            "<b>Что умеет этот бот?</b>\n\n"
+            "БЫСТРЫЕ ПОПОЛНЕНИЕ И ВЫВОДЫ 💸\n\n"
+            "С НУЛЕВЫМ ПРОЦЕНТОМ КОМИССИИ И БЕЗОПАСНОСТЬ ВАШЕГО ДЕПОЗИТА 🏆\n\n"
+            "ВЫВОД 0% ⚡\nПОПОЛНЕНИЕ 0% ⚡ ОБСЛУЖИВАНИЕ ОТ ОДНОЙ СЕКУНДЫ ДО ПЯТИ МИНУТ ⚡\n\n"
+            f"СЛУЖБА ПОДДЕРЖКИ {html.escape(settings.support)}"
+        )
+        await allow(message, bot)
+        return
     if await allow(message, bot):
         await show_home(message)
 
@@ -232,6 +259,7 @@ async def check_subscription(callback: CallbackQuery, bot: Bot) -> None:
         return
     if await subscribed(bot, callback.from_user.id):
         await callback.answer("Подписка подтверждена")
+        await callback.message.answer("✅ Подписка подтверждена! Добро пожаловать.")
         await show_home(callback.message)
     else:
         await callback.answer("Подписка пока не найдена", show_alert=True)
@@ -253,7 +281,7 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
     await state.update_data(platform=message.text)
     await state.set_state(Deposit.account_id)
     await message.answer(
-        "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n\n"
+        "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n<i>Типы систем · Методы по ГЕО-локации</i>\n\n"
         "Введите номер счёта, с которого вносите средства\n"
         "<b>(DEPOSIT ID)</b>",
         reply_markup=ReplyKeyboardRemove(),
@@ -264,12 +292,13 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
 async def account_id_entered(message: Message, state: FSMContext) -> None:
     account_id = (message.text or "").strip()
     if not account_id.isdigit() or not 5 <= len(account_id) <= 20:
-        await message.answer("⚠️ Введите корректный цифровой Deposit ID.")
+        data = await state.get_data()
+        await message.answer(f"ℹ️ Неверный ID для {html.escape(str(data.get('platform', 'платформы')))}")
         return
     await state.update_data(account_id=account_id)
     await state.set_state(Deposit.amount)
     await message.answer(
-        "Теперь, пожалуйста, введите сумму:\n\n"
+        "✅ ID принят.\n\nТеперь, пожалуйста, введите сумму:\n\n"
         f"Минимум: <b>{settings.min_deposit} KGS</b>\n"
         f"Максимум: <b>{settings.max_deposit:,} KGS</b>",
         reply_markup=amounts_keyboard(),
@@ -362,9 +391,9 @@ async def withdrawal(message: Message, bot: Bot) -> None:
     )
 
 
-@router.message(F.text == MAIN_SUPPORT)
-async def support(message: Message) -> None:
-    await message.answer(f"👨‍💼 Поддержка: {html.escape(settings.support)}")
+@router.message(F.text == MAIN_REFERRAL)
+async def referral(message: Message) -> None:
+    await message.answer("🤝 Реферальная программа будет добавлена позже.", reply_markup=main_keyboard())
 
 
 @router.message(F.text == CANCEL)
