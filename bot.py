@@ -50,12 +50,14 @@ DEFAULT_BANK_URLS = {
     "MBANK": "https://app.mbank.kg/qr/#00020101021132440012c2c.mbank.kg01020210129965555139111302125204999953034175911ZhASULAN%20T.63044af1",
     "O!Деньги": "https://api.dengi.o.kg/#00020101021132680012p2p.dengi.kg01048580111233693544705710129965555139111202111302123410%D0%96%D0%B0%D1%81%D1%83%D0%BB%D0%B0%D0%BD%20%D0%A2.520473995303417540105906O%21Bank6304D082",
 }
+DEFAULT_PARTNER_URL = "https://t.me/MelBetmell"
 
 
 @dataclass(frozen=True)
 class Settings:
     token: str
     support: str
+    partner_url: str
     required_channel: str
     required_channel_url: str
     admin_ids: set[int]
@@ -78,6 +80,10 @@ def load_settings() -> Settings:
     token = os.getenv("BOT_TOKEN", "").strip()
     if not token:
         raise RuntimeError("BOT_TOKEN is not configured")
+    support = os.getenv("SUPPORT_USERNAME", "@support").strip()
+    partner_url = os.getenv("PARTNER_URL", "").strip()
+    if not partner_url:
+        partner_url = DEFAULT_PARTNER_URL
     banks = {
         "MBANK": os.getenv("PAYMENT_MBANK_URL", "").strip()
         or DEFAULT_BANK_URLS["MBANK"],
@@ -86,7 +92,8 @@ def load_settings() -> Settings:
     }
     return Settings(
         token=token,
-        support=os.getenv("SUPPORT_USERNAME", "@support").strip(),
+        support=support,
+        partner_url=partner_url,
         required_channel=os.getenv("REQUIRED_CHANNEL", "").strip(),
         required_channel_url=os.getenv("REQUIRED_CHANNEL_URL", "").strip(),
         admin_ids=parse_ids(os.getenv("ADMIN_IDS", "")),
@@ -339,6 +346,14 @@ def support_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="✍️ НАПИСАТЬ В ПОДДЕРЖКУ", url=f"https://t.me/{username}")]
+        ]
+    )
+
+
+def partner_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Стать партнёром", url=settings.partner_url)]
         ]
     )
 
@@ -685,8 +700,9 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
         await message.answer_photo(
             FSInputFile(ACCOUNT_GUIDE_IMAGE),
             caption=text,
-            reply_markup=ReplyKeyboardRemove(),
+            reply_markup=partner_keyboard(),
         )
+        await message.answer("Введите ID вашего игрового аккаунта:", reply_markup=ReplyKeyboardRemove())
     else:
         await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
