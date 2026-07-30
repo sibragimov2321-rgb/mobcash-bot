@@ -323,8 +323,8 @@ def bank_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="MBANK ↗", url=settings.bank_urls["MBANK"]),
-                InlineKeyboardButton(text="O!Деньги ↗", url=settings.bank_urls["O!Деньги"]),
+                InlineKeyboardButton(text="Открыть MBANK ↗", url=settings.bank_urls["MBANK"]),
+                InlineKeyboardButton(text="Открыть O!Деньги ↗", url=settings.bank_urls["O!Деньги"]),
             ],
             [InlineKeyboardButton(text=CANCEL, callback_data="cancel")],
         ]
@@ -752,6 +752,7 @@ async def amount_entered(message: Message, state: FSMContext) -> None:
         "⚠️ Актуально в течение 5 минут.\n\n"
         "Обязательно переведите точную сумму с копейками.\n"
         "После оплаты отправьте чек в этот чат.\n\n"
+        "Выберите банк кнопкой ниже для перехода к платежу.\n\n"
         f"Заявка: <b>#{request_id}</b>"
     )
     if UNIVERSAL_QR_IMAGE.exists():
