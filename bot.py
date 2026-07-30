@@ -684,16 +684,17 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
     await state.update_data(platform=message.text)
     await state.set_state(Deposit.account_id)
     text = (
-        "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n<i>Типы систем · Методы по ГЕО-локации</i>\n\n"
-        "Введите номер счёта, с которого вносите средства\n"
-        "<b>(DEPOSIT ID)</b>"
+        "💰 <b>Пополнение счета</b>\n\n"
+        "Счет: <b>MELBET</b>\n\n"
+        "Введите ID счета:"
     )
+    await message.answer("💰 <b>Пополнение счета</b>\n\nВыберите счет:")
     if ACCOUNT_GUIDE_IMAGE.exists():
         await message.answer_photo(
             FSInputFile(ACCOUNT_GUIDE_IMAGE),
             caption=text,
+            reply_markup=ReplyKeyboardRemove(),
         )
-        await message.answer("Введите ID вашего игрового аккаунта:", reply_markup=ReplyKeyboardRemove())
     else:
         await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
