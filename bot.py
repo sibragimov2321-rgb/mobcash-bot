@@ -685,7 +685,6 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
     await state.set_state(Deposit.account_id)
     text = (
         "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n<i>Типы систем · Методы по ГЕО-локации</i>\n\n"
-        f'<a href="{html.escape(settings.partner_url)}">Стать партнёром</a>\n\n'
         "Введите номер счёта, с которого вносите средства\n"
         "<b>(DEPOSIT ID)</b>"
     )
