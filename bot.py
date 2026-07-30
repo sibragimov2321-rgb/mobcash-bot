@@ -23,6 +23,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     CallbackQuery,
+    BotCommand,
     FSInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -845,6 +846,12 @@ async def fallback(message: Message) -> None:
 async def main() -> None:
     init_database()
     bot = Bot(settings.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Старт"),
+            BotCommand(command="admin", description="Панель управления"),
+        ]
+    )
     dispatcher = Dispatcher()
     dispatcher.include_router(router)
     await dispatcher.start_polling(bot)
