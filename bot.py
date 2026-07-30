@@ -350,14 +350,6 @@ def support_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def partner_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Стать партнёром", url=settings.partner_url)]
-        ]
-    )
-
-
 def payment_link_keyboard(url: str) -> InlineKeyboardMarkup:
     if url.startswith("https://") or url.startswith("http://"):
         return InlineKeyboardMarkup(
@@ -693,6 +685,7 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
     await state.set_state(Deposit.account_id)
     text = (
         "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n<i>Типы систем · Методы по ГЕО-локации</i>\n\n"
+        f'<a href="{html.escape(settings.partner_url)}">Стать партнёром</a>\n\n'
         "Введите номер счёта, с которого вносите средства\n"
         "<b>(DEPOSIT ID)</b>"
     )
@@ -700,7 +693,6 @@ async def platform_selected(message: Message, state: FSMContext) -> None:
         await message.answer_photo(
             FSInputFile(ACCOUNT_GUIDE_IMAGE),
             caption=text,
-            reply_markup=partner_keyboard(),
         )
         await message.answer("Введите ID вашего игрового аккаунта:", reply_markup=ReplyKeyboardRemove())
     else:
