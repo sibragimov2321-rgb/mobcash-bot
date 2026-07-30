@@ -23,6 +23,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     CallbackQuery,
+    FSInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
@@ -33,6 +34,22 @@ from aiogram.types import (
 
 
 router = Router()
+BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = BASE_DIR / "assets"
+ACCOUNT_GUIDE_IMAGE = (
+    ASSETS_DIR / "account_guide.jpg"
+    if (ASSETS_DIR / "account_guide.jpg").exists()
+    else BASE_DIR / "account_guide.jpg"
+)
+UNIVERSAL_QR_IMAGE = (
+    ASSETS_DIR / "qr_omoney.jpg"
+    if (ASSETS_DIR / "qr_omoney.jpg").exists()
+    else BASE_DIR / "qr_omoney.jpg"
+)
+DEFAULT_BANK_URLS = {
+    "MBANK": "https://app.mbank.kg/qr/#00020101021132440012c2c.mbank.kg01020210129965555139111302125204999953034175911ZhASULAN%20T.63044af1",
+    "O!Деньги": "https://api.dengi.o.kg/#00020101021132680012p2p.dengi.kg01048580111233693544705710129965555139111202111302123410%D0%96%D0%B0%D1%81%D1%83%D0%BB%D0%B0%D0%BD%20%D0%A2.520473995303417540105906O%21Bank6304D082",
+}
 
 
 @dataclass(frozen=True)
@@ -62,10 +79,10 @@ def load_settings() -> Settings:
     if not token:
         raise RuntimeError("BOT_TOKEN is not configured")
     banks = {
-        "MBANK": os.getenv("PAYMENT_MBANK_URL", "").strip(),
-        "O!Деньги": os.getenv("PAYMENT_OMONEY_URL", "").strip(),
-        "BAKAI": os.getenv("PAYMENT_BAKAI_BANK_URL", "").strip(),
-        "MegaPay": os.getenv("PAYMENT_MEGAPAY_URL", "").strip(),
+        "MBANK": os.getenv("PAYMENT_MBANK_URL", "").strip()
+        or DEFAULT_BANK_URLS["MBANK"],
+        "O!Деньги": os.getenv("PAYMENT_OMONEY_URL", "").strip()
+        or DEFAULT_BANK_URLS["O!Деньги"],
     }
     return Settings(
         token=token,
@@ -276,7 +293,7 @@ def main_keyboard() -> ReplyKeyboardMarkup:
 def platforms_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="1XBET"), KeyboardButton(text="MELBET")],
+            [KeyboardButton(text="MELBET")],
             [KeyboardButton(text=CANCEL)],
         ],
         resize_keyboard=True,
@@ -296,17 +313,15 @@ def amounts_keyboard() -> ReplyKeyboardMarkup:
 
 
 def bank_keyboard() -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
-    banks = ("MBANK", "O!Деньги", "BAKAI", "MegaPay")
-    for first, second in ((banks[0], banks[1]), (banks[2], banks[3])):
-        rows.append(
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [
-                InlineKeyboardButton(text=f"{first} ↗", callback_data=f"bank:{first}"),
-                InlineKeyboardButton(text=f"{second} ↗", callback_data=f"bank:{second}"),
-            ]
-        )
-    rows.append([InlineKeyboardButton(text=CANCEL, callback_data="cancel")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+                InlineKeyboardButton(text="MBANK ↗", url=settings.bank_urls["MBANK"]),
+                InlineKeyboardButton(text="O!Деньги ↗", url=settings.bank_urls["O!Деньги"]),
+            ],
+            [InlineKeyboardButton(text=CANCEL, callback_data="cancel")],
+        ]
+    )
 
 
 def subscription_keyboard() -> InlineKeyboardMarkup:
@@ -657,16 +672,23 @@ async def deposit_start(message: Message, bot: Bot, state: FSMContext) -> None:
     )
 
 
-@router.message(Deposit.platform, F.text.in_({"1XBET", "MELBET"}))
+@router.message(Deposit.platform, F.text == "MELBET")
 async def platform_selected(message: Message, state: FSMContext) -> None:
     await state.update_data(platform=message.text)
     await state.set_state(Deposit.account_id)
-    await message.answer(
+    text = (
         "<b>ПОПОЛНЕНИЕ СЧЁТА</b>\n<i>Типы систем · Методы по ГЕО-локации</i>\n\n"
         "Введите номер счёта, с которого вносите средства\n"
-        "<b>(DEPOSIT ID)</b>",
-        reply_markup=ReplyKeyboardRemove(),
+        "<b>(DEPOSIT ID)</b>"
     )
+    if ACCOUNT_GUIDE_IMAGE.exists():
+        await message.answer_photo(
+            FSInputFile(ACCOUNT_GUIDE_IMAGE),
+            caption=text,
+            reply_markup=ReplyKeyboardRemove(),
+        )
+    else:
+        await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(Deposit.account_id)
@@ -708,13 +730,30 @@ async def amount_entered(message: Message, state: FSMContext) -> None:
     exact = f"{amount}.{tyiyn:02d}"
     await state.update_data(amount=amount, exact=exact)
     await state.set_state(Deposit.receipt)
-    await message.answer(
+    data = await state.get_data()
+    request_id = create_request(
+        message.from_user.id if message.from_user else 0,
+        str(data.get("platform", "MELBET")),
+        str(data.get("account_id", "")),
+        exact,
+        "UNIVERSAL_QR",
+    )
+    caption = (
         f"✅ <b>Сумма к оплате: {exact} KGS</b>\n"
+        f"🎮 MELBET ID: <code>{html.escape(str(data.get('account_id', '')))}</code>\n\n"
         "⚠️ Актуально в течение 5 минут.\n\n"
         "Обязательно переведите точную сумму с копейками.\n"
-        "После оплаты отправьте чек в этот чат.",
-        reply_markup=bank_keyboard(),
+        "После оплаты отправьте чек в этот чат.\n\n"
+        f"Заявка: <b>#{request_id}</b>"
     )
+    if UNIVERSAL_QR_IMAGE.exists():
+        await message.answer_photo(
+            FSInputFile(UNIVERSAL_QR_IMAGE),
+            caption=caption,
+            reply_markup=bank_keyboard(),
+        )
+    else:
+        await message.answer(caption, reply_markup=bank_keyboard())
 
 
 @router.callback_query(F.data.startswith("bank:"))
